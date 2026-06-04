@@ -20,7 +20,7 @@ from .event import Event, Reply, MessageEvent
 
 
 async def _check_reply(bot: "Bot", event: MessageEvent) -> None:
-    """检查消息中存在的回复，去除并赋值 `event.reply`, `event.to_me`。
+    """检查消息中存在的回复，去除并赋值 `event.reply`。
 
     参数:
         bot: Bot 对象
@@ -40,9 +40,6 @@ async def _check_reply(bot: "Bot", event: MessageEvent) -> None:
         return
 
     if event.reply.sender.user_id is not None:
-        # ensure string comparation
-        if str(event.reply.sender.user_id) == str(event.self_id):
-            event.to_me = True
         del event.message[index]
 
         if (
@@ -80,9 +77,7 @@ def _check_at_me(bot: "Bot", event: MessageEvent) -> None:
     else:
 
         def _is_at_me_seg(segment: MessageSegment):
-            return segment.type == "at" and str(segment.data.get("qq", "")) == str(
-                event.self_id
-            )
+            return segment.type == "at" and str(segment.data.get("qq", "")) == str(event.self_id)
 
         # check the first segment
         if _is_at_me_seg(event.message[0]):
@@ -95,9 +90,7 @@ def _check_at_me(bot: "Bot", event: MessageEvent) -> None:
             if event.message and _is_at_me_seg(event.message[0]):
                 event.message.pop(0)
                 if event.message and event.message[0].type == "text":
-                    event.message[0].data["text"] = (
-                        event.message[0].data["text"].lstrip()
-                    )
+                    event.message[0].data["text"] = event.message[0].data["text"].lstrip()
                     if not event.message[0].data["text"]:
                         del event.message[0]
 
@@ -195,9 +188,7 @@ class Bot(BaseBot):
     OneBot v11 协议 Bot 适配。
     """
 
-    send_handler: Callable[["Bot", Event, Union[str, Message, MessageSegment]], Any] = (
-        send
-    )
+    send_handler: Callable[["Bot", Event, Union[str, Message, MessageSegment]], Any] = send
 
     async def handle_event(self, event: Event) -> None:
         """处理收到的事件。"""
