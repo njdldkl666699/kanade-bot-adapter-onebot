@@ -47,6 +47,9 @@ async def _check_reply(bot: "Bot", event: MessageEvent) -> None:
             and event.message[index].type == "at"
             and event.message[index].data.get("qq") == str(event.reply.sender.user_id)
         ):
+            # 引用与@同一个人，并且也是收到消息的主体（self_id），则认为是to_me
+            if event.message[index].data.get("qq") == str(event.self_id):
+                event.to_me = True
             del event.message[index]
 
     if len(event.message) > index and event.message[index].type == "text":
