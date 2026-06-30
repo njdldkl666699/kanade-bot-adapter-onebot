@@ -35,9 +35,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
         if self.is_text():
             return escape(self.data.get("text", ""), escape_comma=False)
 
-        params = ",".join(
-            f"{k}={escape(str(v))}" for k, v in self.data.items() if v is not None
-        )
+        params = ",".join(f"{k}={escape(str(v))}" for k, v in self.data.items() if v is not None)
         return f"[CQ:{self.type}{',' if params else ''}{params}]"
 
     def to_rich_text(self, truncate: Optional[int] = 70) -> str:
@@ -54,20 +52,14 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return f"[{self.type}{':' if params else ''}{params}]"
 
     @override
-    def __add__(
-        self, other: Union[str, "MessageSegment", Iterable["MessageSegment"]]
-    ) -> "Message":
-        return Message(self) + (
-            MessageSegment.text(other) if isinstance(other, str) else other
-        )
+    def __add__(self, other: Union[str, "MessageSegment", Iterable["MessageSegment"]]) -> "Message":
+        return Message(self) + (MessageSegment.text(other) if isinstance(other, str) else other)
 
     @override
     def __radd__(
         self, other: Union[str, "MessageSegment", Iterable["MessageSegment"]]
     ) -> "Message":
-        return (
-            MessageSegment.text(other) if isinstance(other, str) else Message(other)
-        ) + self
+        return (MessageSegment.text(other) if isinstance(other, str) else Message(other)) + self
 
     @override
     def is_text(self) -> bool:
@@ -177,12 +169,8 @@ class MessageSegment(BaseMessageSegment["Message"]):
         return cls("node", {"id": str(id_)})
 
     @classmethod
-    def node_custom(
-        cls, user_id: int, nickname: str, content: Union[str, "Message"]
-    ) -> Self:
-        return cls(
-            "node", {"user_id": str(user_id), "nickname": nickname, "content": content}
-        )
+    def node_custom(cls, user_id: int, nickname: str, content: Union[str, "Message"]) -> Self:
+        return cls("node", {"user_id": str(user_id), "nickname": nickname, "content": content})
 
     @classmethod
     def poke(cls, type_: str, id_: str) -> Self:
@@ -228,9 +216,7 @@ class MessageSegment(BaseMessageSegment["Message"]):
         content: Optional[str] = None,
         image: Optional[str] = None,
     ) -> Self:
-        return cls(
-            "share", {"url": url, "title": title, "content": content, "image": image}
-        )
+        return cls("share", {"url": url, "title": title, "content": content, "image": image})
 
     @classmethod
     def text(cls, text: str) -> Self:
@@ -263,36 +249,52 @@ class Message(BaseMessage[MessageSegment]):
     """OneBot v11 协议 Message 适配。"""
 
     @classmethod
+    def __get_pydantic_json_schema__(cls, core_schema, handler):
+        segment_schema = {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+                "type": {"type": "string"},
+                "data": {
+                    "type": "object",
+                    "additionalProperties": True,
+                },
+            },
+            "additionalProperties": True,
+        }
+
+        return {
+            "title": cls.__name__,
+            "description": "OneBot v11 消息，支持 CQ 码字符串、单个消息段对象或消息段数组。",
+            "anyOf": [
+                {"type": "string"},
+                segment_schema,
+                {
+                    "type": "array",
+                    "items": segment_schema,
+                },
+            ],
+        }
+
+    @classmethod
     @override
     def get_segment_class(cls) -> type[MessageSegment]:
         return MessageSegment
 
     @override
-    def __add__(
-        self, other: Union[str, MessageSegment, Iterable[MessageSegment]]
-    ) -> Self:
-        return super().__add__(
-            MessageSegment.text(other) if isinstance(other, str) else other
-        )
+    def __add__(self, other: Union[str, MessageSegment, Iterable[MessageSegment]]) -> Self:
+        return super().__add__(MessageSegment.text(other) if isinstance(other, str) else other)
 
     def to_rich_text(self, truncate: Optional[int] = 70) -> str:
         return "".join(seg.to_rich_text(truncate=truncate) for seg in self)
 
     @override
-    def __radd__(
-        self, other: Union[str, MessageSegment, Iterable[MessageSegment]]
-    ) -> Self:
-        return super().__radd__(
-            MessageSegment.text(other) if isinstance(other, str) else other
-        )
+    def __radd__(self, other: Union[str, MessageSegment, Iterable[MessageSegment]]) -> Self:
+        return super().__radd__(MessageSegment.text(other) if isinstance(other, str) else other)
 
     @override
-    def __iadd__(
-        self, other: Union[str, MessageSegment, Iterable[MessageSegment]]
-    ) -> Self:
-        return super().__iadd__(
-            MessageSegment.text(other) if isinstance(other, str) else other
-        )
+    def __iadd__(self, other: Union[str, MessageSegment, Iterable[MessageSegment]]) -> Self:
+        return super().__iadd__(MessageSegment.text(other) if isinstance(other, str) else other)
 
     @staticmethod
     @override
@@ -321,9 +323,7 @@ class Message(BaseMessage[MessageSegment]):
                     k: unescape(v)
                     for k, v in (
                         x.split("=", maxsplit=1)
-                        for x in filter(
-                            lambda x: x, (x.lstrip() for x in data.split(","))
-                        )
+                        for x in filter(lambda x: x, (x.lstrip() for x in data.split(",")))
                     )
                 }
                 yield MessageSegment(type_, data)
