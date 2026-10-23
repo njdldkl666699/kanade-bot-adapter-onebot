@@ -76,7 +76,9 @@ def _check_at_me(bot: "Bot", event: MessageEvent) -> None:
         event.message.append(MessageSegment.text(""))
 
     if event.message_type == "private":
-        event.to_me = True
+        # 私聊不设置为to_me
+        # event.to_me = True
+        pass
     else:
 
         def _is_at_me_seg(segment: MessageSegment):
@@ -138,7 +140,8 @@ def _check_nickname(bot: "Bot", event: MessageEvent) -> None:
     if m := re.search(rf"^({nickname_regex})([\s,，]*|$)", first_text, re.IGNORECASE):
         log("DEBUG", f"User is calling me {m[1]}")
         event.to_me = True
-        first_msg_seg.data["text"] = first_text[m.end() :]
+        # 不再移除昵称
+        # first_msg_seg.data["text"] = first_text[m.end() :]
 
 
 async def send(
